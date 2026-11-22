@@ -1,0 +1,16 @@
+{
+  "sumber": "World Bank, World Development Indicators",
+  "indikator": "SP.POP.TOTL (Population, total)",
+  "url_api": "https://api.worldbank.org/v2/country/BRN;KHM;IDN;LAO;MYS;MMR;PHL;SGP;THA;TLS;VNM/indicator/SP.POP.TOTL?format=json&per_page=1000&date=2015:2030",
+  "halaman_indikator": "https://data.worldbank.org/indicator/SP.POP.TOTL",
+  "tanggal_unduh": "2026-11-22",
+  "lisensi": "CC BY 4.0",
+  "luas_permukaan": {
+    "indikator": "AG.SRF.TOTL.K2 (Surface area, sq. km)",
+    "url_api": "https://api.worldbank.org/v2/country/BRN;KHM;IDN;LAO;MYS;MMR;PHL;SGP;THA;TLS;VNM/indicator/AG.SRF.TOTL.K2?format=json&per_page=1000&date=2015:2030",
+    "halaman_indikator": "https://data.worldbank.org/indicator/AG.SRF.TOTL.K2",
+    "tanggal_unduh": "2026-11-22",
+    "lisensi": "CC BY 4.0",
+    "catatan": "Tahun 2025 belum tersedia; dipakai tahun terbaru yang tidak kosong (lihat kolom area_year)."
+  }
+}
