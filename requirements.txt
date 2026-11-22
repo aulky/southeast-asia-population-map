@@ -1,0 +1,13 @@
+geopandas>=1.0
+pyproj>=3.6
+shapely>=2.0
+matplotlib>=3.8
+pandas>=2.1
+numpy>=1.26
+requests>=2.31
+jupyter>=1.0
+nbformat>=5.9
+nbconvert>=7.0
+ipykernel>=6.29
+plotly>=5.20
+mapclassify>=2.6
