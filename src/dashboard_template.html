@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard Populasi ASEAN</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1c2430;--mute:#5b6675;--line:#dde2e9;--accent:#c2410c;--ok:#15803d;--bad:#b91c1c}
+@media (prefers-color-scheme: dark){:root{--bg:#10141a;--card:#181e27;--ink:#e6eaf0;--mute:#9aa6b6;--line:#2a3340;--accent:#fb923c;--ok:#4ade80;--bad:#f87171}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:20px 24px 4px}
+h1{margin:0;font-size:1.5rem;letter-spacing:-.01em}
+header p{margin:4px 0 0;color:var(--mute)}
+main{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;padding:16px 24px 32px}
+@media (max-width:960px){main{grid-template-columns:1fr;padding:12px 16px 24px}header{padding:16px 16px 0}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h2{margin:0 0 10px;font-size:1rem}
+.toggle{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:10px}
+.toggle button{border:0;background:transparent;color:var(--ink);padding:8px 14px;font:inherit;cursor:pointer}
+.toggle button[aria-pressed=true]{background:var(--accent);color:#fff}
+#map{width:100%;height:520px}
+@media (max-width:640px){#map{height:380px}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.85rem;margin-top:6px;align-items:center}
+.legend b{width:100%;font-weight:600}
+.legend span i{display:inline-block;width:14px;height:14px;border:1px solid #555;vertical-align:-2px;margin-right:5px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.kpi{border:1px solid var(--line);border-radius:10px;padding:10px}
+.kpi small{display:block;color:var(--mute)}
+.kpi strong{font-size:1.2rem}
+ul.checks{list-style:none;margin:0;padding:0;font-size:.9rem}
+ul.checks li{padding:5px 0;border-top:1px solid var(--line);display:flex;gap:8px}
+ul.checks .ok{color:var(--ok)} ul.checks .bad{color:var(--bad)} ul.checks .warn{color:#d97706}
+ul.checks small{display:block;color:var(--mute)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
+th{cursor:pointer;user-select:none;position:sticky;top:0;background:var(--card)}
+th[aria-sort=ascending]::after{content:" ▲"} th[aria-sort=descending]::after{content:" ▼"}
+tr:hover td{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.full{grid-column:1/-1}
+footer{padding:0 24px 24px;color:var(--mute);font-size:.8rem}
+.note{color:var(--mute);font-size:.82rem;margin:8px 0 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>Populasi Negara-negara ASEAN</h1>
+  <p>Choropleth interaktif · proyeksi Albers Equal-Area Conic · data tahun <span id="yr"></span></p>
+</header>
+<main>
+  <section class="card" aria-label="Peta">
+    <div class="toggle" role="group" aria-label="Pilih ukuran">
+      <button id="b-pop" aria-pressed="true">Total populasi</button>
+      <button id="b-density" aria-pressed="false">Kepadatan</button>
+    </div>
+    <div id="map"></div>
+    <div class="legend" id="legend"></div>
+    <p class="note">Arahkan kursor ke negara untuk detail. Gulir untuk zoom (berguna untuk Singapura &amp; Brunei, ditandai lingkaran).</p>
+  </section>
+
+  <section class="card" aria-label="Pengecekan">
+    <h2>Panel pengecekan</h2>
+    <div class="kpis">
+      <div class="kpi"><small>Jumlah negara</small><strong id="k-n"></strong></div>
+      <div class="kpi"><small>Total populasi</small><strong id="k-pop"></strong></div>
+      <div class="kpi"><small>Nilai hilang</small><strong id="k-miss"></strong></div>
+    </div>
+    <ul class="checks" id="checks"></ul>
+  </section>
+
+  <section class="card full" aria-label="Tabel data">
+    <h2>Tabel data <small style="color:var(--mute);font-weight:400">(klik judul kolom untuk mengurutkan)</small></h2>
+    <div class="tablewrap"><table id="tbl"><thead><tr>
+      <th data-k="name">Negara</th><th data-k="iso3">ISO3</th><th data-k="pop">Populasi</th>
+      <th data-k="area">Luas resmi (km²)</th><th data-k="area_geom">Luas geometri (km²)</th><th data-k="area_diff">Selisih (%)</th><th data-k="density">Kepadatan (jiwa/km²)</th><th data-k="year">Tahun pop.</th>
+    </tr></thead><tbody></tbody></table></div>
+  </section>
+</main>
+<footer>Sumber: World Bank WDI (SP.POP.TOTL &amp; AG.SRF.TOTL.K2, CC BY 4.0); batas negara Natural Earth 1:50m (domain publik). Kepadatan memakai luas resmi World Bank (AG.SRF.TOTL.K2, tahun terbaru tersedia: 2024). Luas geometri 1:50m hanya perkiraan pembanding; selisih &gt;10% ditandai.</footer>
+
+<script>/*PLOTLYJS*/</script>
+<script>
+const D = /*DATA*/null;
+const fmt = (v, d=0) => v.toLocaleString("id-ID", {maximumFractionDigits:d, minimumFractionDigits:d});
+const $ = s => document.querySelector(s);
+let mode = "pop";
+$("#yr").textContent = D.summary.year;
+
+// ---- peta ----
+const SMALL = ["SGP","BRN"];
+function hover(r){
+  return `<b>${r.name}</b> (${r.iso3})<br>Populasi: ${fmt(r.pop)}<br>Luas resmi: ${fmt(r.area)} km² (${r.area_year})<br>Luas geometri: ${fmt(r.area_geom)} km² (${r.area_diff>0?'+':''}${fmt(r.area_diff,1)}%)<br>`+
+         `Kepadatan: ${fmt(r.density,1)} jiwa/km² (luas resmi)<br>Tahun populasi: ${r.year}<extra></extra>`;
+}
+const traces = D.rows.map(r => ({
+  type:"scatter", mode:"lines", x:r.x, y:r.y, fill:"toself", name:r.name,
+  fillcolor:D.colors.pop[r.iso3], line:{color:"#333", width:.6},
+  hoveron:"fills", hovertemplate:hover(r), showlegend:false
+}));
+// penanda untuk negara sangat kecil
+D.rows.filter(r => SMALL.includes(r.iso3)).forEach(r => {
+  const xs = r.x.filter(v=>v!==null), ys = r.y.filter(v=>v!==null);
+  const cx = xs.reduce((a,b)=>a+b)/xs.length, cy = ys.reduce((a,b)=>a+b)/ys.length;
+  traces.push({type:"scatter", mode:"markers+text", x:[cx], y:[cy], text:[r.name], textposition:"bottom right",
+    textfont:{size:11}, marker:{symbol:"circle-open", size:14, line:{width:2, color:"#111"}},
+    hovertemplate:hover(r), showlegend:false});
+});
+const layout = {
+  margin:{l:0,r:0,t:0,b:0}, paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"#dfe9f1",
+  xaxis:{visible:false, scaleanchor:"y", constrain:"domain"}, yaxis:{visible:false},
+  dragmode:"pan", hoverlabel:{font:{size:13}}
+};
+Plotly.newPlot("map", traces, layout, {responsive:true, displaylogo:false, scrollZoom:true,
+  modeBarButtonsToRemove:["select2d","lasso2d"]});
+
+function setMode(m){
+  mode = m;
+  Plotly.restyle("map", {fillcolor: D.rows.map(r => D.colors[m][r.iso3])}, D.rows.map((_,i)=>i));
+  $("#b-pop").setAttribute("aria-pressed", m==="pop"); $("#b-density").setAttribute("aria-pressed", m==="density");
+  const L = D.legends[m];
+  $("#legend").innerHTML = `<b>${L.title}</b>` + L.items.map(i=>`<span><i style="background:${i.color}"></i>${i.label}</span>`).join("");
+}
+$("#b-pop").onclick = () => setMode("pop"); $("#b-density").onclick = () => setMode("density");
+setMode("pop");
+
+// ---- KPI & pengecekan ----
+const S = D.summary;
+$("#k-n").textContent = S.n + (S.n===11 ? " ✔" : " ✘");
+$("#k-pop").textContent = fmt(S.total_pop/1e6,1) + " jt";
+$("#k-miss").textContent = S.missing.length ? S.missing.join(", ") : "tidak ada";
+// pengecekan sisi-browser (live) ditambahkan di depan hasil validasi Python
+const live = [
+  {name:"Peta memuat 11 poligon negara", ok:D.rows.length===11 && D.rows.every(r=>r.x.length>3), detail:""},
+  {name:"Setiap negara punya warna di kedua mode", ok:D.rows.every(r=>D.colors.pop[r.iso3] && D.colors.density[r.iso3]), detail:""},
+  {name:"Tabel memuat 11 baris", ok:true, detail:"", id:"tblcheck"},
+];
+function renderChecks(){
+  const all = live.concat(D.checks);
+  $("#checks").innerHTML = all.map(c => `<li><span class="${c.ok?"ok":(c.warn?"warn":"bad")}">${c.ok?"✔":(c.warn?"⚠":"✘")}</span><div>${c.name}${c.detail?`<small>${c.detail}</small>`:""}</div></li>`).join("");
+}
+
+// ---- tabel ----
+let sortK = "pop", dir = -1;
+function renderTable(){
+  const rows = [...D.rows].sort((a,b)=> (typeof a[sortK]==="string" ? a[sortK].localeCompare(b[sortK]) : a[sortK]-b[sortK])*dir);
+  $("#tbl tbody").innerHTML = rows.map(r=>`<tr><td>${r.name}</td><td>${r.iso3}</td><td>${fmt(r.pop)}</td><td>${fmt(r.area)}</td><td>${fmt(r.area_geom)}</td><td style="${Math.abs(r.area_diff)>10?'color:var(--bad);font-weight:600':''}">${r.area_diff>0?'+':''}${fmt(r.area_diff,1)}${Math.abs(r.area_diff)>10?' ⚠':''}</td><td>${fmt(r.density,1)}</td><td>${r.year}</td></tr>`).join("");
+  document.querySelectorAll("#tbl th").forEach(th => th.setAttribute("aria-sort", th.dataset.k===sortK ? (dir>0?"ascending":"descending") : "none"));
+  live[2].ok = $("#tbl tbody").children.length === 11; renderChecks();
+}
+document.querySelectorAll("#tbl th").forEach(th => th.onclick = () => {
+  dir = (sortK===th.dataset.k) ? -dir : (th.dataset.k==="name"||th.dataset.k==="iso3" ? 1 : -1);
+  sortK = th.dataset.k; renderTable();
+});
+renderTable();
+</script>
+</body>
+</html>
