@@ -1,8 +1,10 @@
 # Lingkungan virtual
 .venv/
-# Data mentah unduhan (diunduh ulang otomatis oleh src/load_data.py)
-data/raw/
+
 # Python / Jupyter
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+
+# Laporan pengumpulan (Word)
+*.docx
